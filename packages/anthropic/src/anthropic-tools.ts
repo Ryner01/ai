@@ -9,6 +9,8 @@ import { textEditor_20241022 } from './tool/text-editor_20241022';
 import { textEditor_20250124 } from './tool/text-editor_20250124';
 import { textEditor_20250429 } from './tool/text-editor_20250429';
 import { textEditor_20250728 } from './tool/text-editor_20250728';
+import { toolSearchBm25_20251119 } from './tool/tool-search-bm25_20251119';
+import { toolSearchRegex_20251119 } from './tool/tool-search-regex_20251119';
 import { webFetch_20250910 } from './tool/web-fetch-20250910';
 import { webSearch_20250305 } from './tool/web-search_20250305';
 
@@ -173,4 +175,52 @@ export const anthropicTools = {
    * @param userLocation - Optional user location information to provide geographically relevant search results.
    */
   webSearch_20250305,
+
+  /**
+   * Creates a tool search tool using regex patterns for dynamic tool discovery.
+   *
+   * The tool search tool enables Claude to work with hundreds or thousands of tools
+   * by dynamically discovering and loading them on-demand. Claude constructs regex
+   * patterns using Python's `re.search()` syntax to search tool names and descriptions.
+   *
+   * Tool name must be `tool_search_tool_regex`.
+   *
+   * Supported models: Claude Sonnet 4.5, Claude Opus 4.5
+   *
+   * @example
+   * ```ts
+   * const result = await generateText({
+   *   model: anthropic('claude-sonnet-4-5-20250929'),
+   *   tools: {
+   *     tool_search: anthropic.tools.toolSearchRegex_20251119(),
+   *     get_weather: tool({ ... }), // Will have defer_loading: true
+   *   },
+   * });
+   * ```
+   */
+  toolSearchRegex_20251119,
+
+  /**
+   * Creates a tool search tool using BM25 natural language search for dynamic tool discovery.
+   *
+   * The tool search tool enables Claude to work with hundreds or thousands of tools
+   * by dynamically discovering and loading them on-demand. Claude uses natural language
+   * queries to find relevant tools using BM25 text matching.
+   *
+   * Tool name must be `tool_search_tool_bm25`.
+   *
+   * Supported models: Claude Sonnet 4.5, Claude Opus 4.5
+   *
+   * @example
+   * ```ts
+   * const result = await generateText({
+   *   model: anthropic('claude-sonnet-4-5-20250929'),
+   *   tools: {
+   *     tool_search: anthropic.tools.toolSearchBm25_20251119(),
+   *     get_weather: tool({ ... }), // Will have defer_loading: true
+   *   },
+   * });
+   * ```
+   */
+  toolSearchBm25_20251119,
 };

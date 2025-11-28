@@ -639,7 +639,9 @@ export class AnthropicMessagesLanguageModel implements LanguageModelV3 {
           } else if (
             part.name === 'web_search' ||
             part.name === 'code_execution' ||
-            part.name === 'web_fetch'
+            part.name === 'web_fetch' ||
+            part.name === 'tool_search_tool_regex' ||
+            part.name === 'tool_search_tool_bm25'
           ) {
             content.push({
               type: 'tool-call',
@@ -650,6 +652,34 @@ export class AnthropicMessagesLanguageModel implements LanguageModelV3 {
             });
           }
 
+          break;
+        }
+        case 'tool_result': {
+          // Tool search tool results with tool_reference blocks
+          if (Array.isArray(part.content)) {
+            content.push({
+              type: 'tool-result',
+              toolCallId: part.tool_use_id,
+              toolName: 'tool_search',
+              result: part.content.map(
+                (ref: { type: string; tool_name: string }) => ({
+                  type: ref.type,
+                  toolName: ref.tool_name,
+                }),
+              ),
+            });
+          } else if (part.content.type === 'tool_search_tool_result_error') {
+            content.push({
+              type: 'tool-result',
+              toolCallId: part.tool_use_id,
+              toolName: 'tool_search',
+              isError: true,
+              result: {
+                type: 'tool_search_tool_result_error',
+                errorCode: part.content.error_code,
+              },
+            });
+          }
           break;
         }
         case 'mcp_tool_use': {
@@ -918,6 +948,7 @@ export class AnthropicMessagesLanguageModel implements LanguageModelV3 {
       | 'bash_code_execution_tool_result'
       | 'mcp_tool_use'
       | 'mcp_tool_result'
+      | 'tool_result'
       | undefined = undefined;
 
     const generateId = this.generateId;
@@ -1083,6 +1114,9 @@ export class AnthropicMessagesLanguageModel implements LanguageModelV3 {
                       'text_editor_code_execution',
                       // code execution 20250825 bash:
                       'bash_code_execution',
+                      // tool search:
+                      'tool_search_tool_regex',
+                      'tool_search_tool_bm25',
                     ].includes(part.name)
                   ) {
                     contentBlocks[value.index] = {
@@ -1109,6 +1143,37 @@ export class AnthropicMessagesLanguageModel implements LanguageModelV3 {
                     });
                   }
 
+                  return;
+                }
+
+                case 'tool_result': {
+                  // Tool search tool results with tool_reference blocks
+                  if (Array.isArray(part.content)) {
+                    controller.enqueue({
+                      type: 'tool-result',
+                      toolCallId: part.tool_use_id,
+                      toolName: 'tool_search',
+                      result: part.content.map(
+                        (ref: { type: string; tool_name: string }) => ({
+                          type: ref.type,
+                          toolName: ref.tool_name,
+                        }),
+                      ),
+                    });
+                  } else if (
+                    part.content.type === 'tool_search_tool_result_error'
+                  ) {
+                    controller.enqueue({
+                      type: 'tool-result',
+                      toolCallId: part.tool_use_id,
+                      toolName: 'tool_search',
+                      isError: true,
+                      result: {
+                        type: 'tool_search_tool_result_error',
+                        errorCode: part.content.error_code,
+                      },
+                    });
+                  }
                   return;
                 }
 
